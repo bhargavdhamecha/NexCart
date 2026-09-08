@@ -1,0 +1,176 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: nexcart-postgres
+    environment:
+      POSTGRES_DB: ${DB_NAME:-nexcart}
+      POSTGRES_USER: ${DB_USER:-nexcart_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-nexcart_password}
+    # max_connections cut from 200 -> 40 and shared_buffers pinned explicitly — 200 was far
+    # more headroom than a single small backend pool (5 connections, see
+    # backend/application.properties) needs, and each reserved connection has a real
+    # per-connection memory cost, which matters on a 1GB deployment target.
+    command: postgres -c max_connections=40 -c shared_buffers=128MB -c work_mem=4MB
+    mem_limit: 220m
+    ports:
+      # Bound to loopback only — nothing outside this host needs direct DB access; SSH-tunnel
+      # in for admin work instead of exposing this publicly.
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - nexcart_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-nexcart_user} -d ${DB_NAME:-nexcart}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
+
+  kafka:
+    image: apache/kafka:3.7.0
+    container_name: nexcart-kafka
+    # Single-node KRaft mode — no separate Zookeeper service needed. Official Apache Kafka image.
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: controller,broker
+      # Dual listeners: BROKER is container-network-only, advertised by its Compose service
+      # name — this is what containerized backend/gateway actually use. EXTERNAL is for
+      # host-based dev (./gradlew bootRun outside Docker), advertised as localhost on the
+      # *published* port, 9094, not 9092. Necessary, not just tuning: a single listener
+      # advertising "localhost:9092" to every client (the old config) works only when the
+      # client is on the host — once backend/gateway are containers themselves, Kafka would
+      # keep telling them to reconnect to "localhost:9092", which resolves to their own
+      # loopback, not Kafka, silently breaking all Kafka traffic.
+      KAFKA_LISTENERS: BROKER://:9092,EXTERNAL://:9094,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: BROKER://kafka:9092,EXTERNAL://localhost:9094
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,BROKER:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: BROKER
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      # Kafka's own default heap is 1G — far too much for a single-topic, single-broker demo
+      # workload on a 1GB box.
+      KAFKA_HEAP_OPTS: "-Xmx256m -Xms256m"
+    mem_limit: 450m
+    ports:
+      - "127.0.0.1:9094:9094"
+    volumes:
+      - nexcart_kafka_data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 >/dev/null 2>&1"]
+      interval: 15s
+      timeout: 10s
+      retries: 6
+      start_period: 40s
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: nexcart-redis
+    # save "" disables RDB snapshotting — acceptable since Redis only backs product-catalog
+    # caching and the gateway's rate-limiter token buckets, both fine to lose on a restart;
+    # saves disk I/O and avoids fork-based snapshot memory spikes on a 1GB box.
+    command: redis-server --maxmemory 64mb --maxmemory-policy allkeys-lru --save ""
+    mem_limit: 100m
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - nexcart_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+  backend:
+    profiles: ["full"]
+    build:
+      context: ./backend
+    container_name: nexcart-backend
+    env_file: .env
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-nexcart}
+      DB_USER: ${DB_USER:-nexcart_user}
+      DB_PASSWORD: ${DB_PASSWORD:-nexcart_password}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      # UseSerialGC: recommended over the G1 default for small (<~2GB) heaps — less GC
+      # bookkeeping overhead, matters more than throughput here. MaxMetaspaceSize bumped from
+      # an initial 128m, which OOM'd for real: Hibernate + Spring Security + AWS SDK + Kafka +
+      # AspectJ + Actuator between them load enough classes/proxies to need real headroom here.
+      JAVA_OPTS: "-Xms96m -Xmx256m -XX:MaxMetaspaceSize=256m -XX:+UseSerialGC -Xss512k"
+    mem_limit: 480m
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 6
+      start_period: 60s
+    restart: unless-stopped
+
+  gateway:
+    profiles: ["full"]
+    build:
+      context: ./gateway
+    container_name: nexcart-gateway
+    env_file: .env
+    environment:
+      BACKEND_URI: http://backend:8080
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      # MaxMetaspaceSize bumped from an initial 96m for the same reason as backend — Spring
+      # Cloud Gateway/WebFlux loads more classes than that headroom allowed for.
+      JAVA_OPTS: "-Xms48m -Xmx144m -XX:MaxMetaspaceSize=160m -XX:+UseSerialGC -Xss512k"
+    mem_limit: 300m
+    depends_on:
+      backend:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 6
+      start_period: 45s
+    restart: unless-stopped
+
+  frontend:
+    profiles: ["full"]
+    build:
+      context: ./frontend
+    container_name: nexcart-frontend
+    ports:
+      - "80:80"
+    mem_limit: 48m
+    depends_on:
+      gateway:
+        condition: service_healthy
+    healthcheck:
+      # 127.0.0.1, not localhost: this nginx config binds IPv4 only, but /etc/hosts resolves
+      # "localhost" to ::1 first inside the container — wget doesn't fall back to IPv4, so it
+      # reports a false "connection refused" against a server that's actually fine. Confirmed
+      # live (see frontend/Dockerfile, which has the same fix and the same note).
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:80/"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+volumes:
+  nexcart_postgres_data:
+  nexcart_kafka_data:
+  nexcart_redis_data:

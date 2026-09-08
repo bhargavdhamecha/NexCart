@@ -1,0 +1,631 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NexCart — E-commerce Prototype</title>
+<style>
+:root{
+  --bg:#f7f8fb;
+  --surface:#ffffff;
+  --surface-2:#f1f4f8;
+  --text:#172033;
+  --muted:#6b7280;
+  --line:#e6e9ef;
+  --brand:#2e5cff;
+  --brand-2:#7c4dff;
+  --accent:#18b17b;
+  --danger:#e5484d;
+  --warning:#f59e0b;
+  --shadow:0 12px 40px rgba(25,35,60,.09);
+  --radius:18px;
+  --radius-sm:12px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;
+  font-family:Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color:var(--text);
+  background:var(--bg);
+}
+button,input,select{font:inherit}
+button{cursor:pointer}
+a{text-decoration:none;color:inherit}
+.container{width:min(1180px,calc(100% - 32px));margin:auto}
+.topbar{
+  background:#111827;color:#dbe2ef;font-size:13px;padding:9px 0;
+}
+.topbar .container{display:flex;justify-content:space-between;gap:16px;align-items:center}
+.header{
+  position:sticky;top:0;z-index:40;background:rgba(255,255,255,.92);
+  backdrop-filter:blur(14px);border-bottom:1px solid rgba(230,233,239,.9);
+}
+.header-row{height:76px;display:flex;align-items:center;gap:22px}
+.logo{display:flex;align-items:center;gap:10px;font-weight:850;font-size:22px;letter-spacing:-.4px}
+.logo-mark{
+  width:38px;height:38px;border-radius:12px;
+  background:linear-gradient(135deg,var(--brand),var(--brand-2));
+  display:grid;place-items:center;color:white;box-shadow:0 8px 22px rgba(46,92,255,.28)
+}
+.search{
+  flex:1;display:flex;align-items:center;background:#f3f5f9;border:1px solid var(--line);
+  border-radius:14px;padding:0 14px;height:46px;min-width:180px
+}
+.search input{border:0;outline:0;background:transparent;flex:1;padding:0 10px;color:var(--text)}
+.nav-actions{display:flex;align-items:center;gap:10px}
+.icon-btn,.ghost-btn,.primary-btn,.secondary-btn,.danger-btn{
+  border:0;border-radius:12px;transition:.2s ease;display:inline-flex;align-items:center;justify-content:center;gap:8px
+}
+.icon-btn{width:44px;height:44px;background:#f3f5f9;border:1px solid var(--line);position:relative}
+.icon-btn:hover,.ghost-btn:hover{transform:translateY(-1px);background:#eef2f7}
+.cart-count{
+  position:absolute;right:-5px;top:-5px;background:var(--danger);color:white;width:20px;height:20px;border-radius:999px;
+  display:grid;place-items:center;font-size:11px;font-weight:800;border:2px solid white
+}
+.ghost-btn{height:44px;padding:0 15px;background:white;border:1px solid var(--line);font-weight:700}
+.primary-btn{height:46px;padding:0 18px;background:linear-gradient(135deg,var(--brand),var(--brand-2));color:white;font-weight:800;box-shadow:0 8px 20px rgba(46,92,255,.24)}
+.primary-btn:hover{transform:translateY(-1px);box-shadow:0 11px 26px rgba(46,92,255,.3)}
+.secondary-btn{height:44px;padding:0 16px;background:#eef3ff;color:#2447d8;font-weight:750}
+.danger-btn{height:44px;padding:0 16px;background:#fff0f0;color:#c9343a;font-weight:750}
+.hero{
+  margin:28px auto 22px;border-radius:28px;overflow:hidden;
+  background:
+    radial-gradient(circle at 82% 24%,rgba(255,255,255,.55),transparent 18%),
+    radial-gradient(circle at 70% 75%,rgba(255,255,255,.2),transparent 20%),
+    linear-gradient(135deg,#1f48ff 0%,#6247e7 54%,#9d63ff 100%);
+  color:white;min-height:370px;display:grid;grid-template-columns:1.15fr .85fr;align-items:center;
+  box-shadow:0 18px 50px rgba(49,65,180,.25)
+}
+.hero-copy{padding:56px}
+.badge{
+  display:inline-flex;align-items:center;gap:8px;border-radius:999px;padding:8px 12px;
+  background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.24);font-size:13px;font-weight:750
+}
+.hero h1{font-size:clamp(38px,5vw,62px);line-height:1.0;margin:20px 0 18px;letter-spacing:-2px}
+.hero p{font-size:18px;line-height:1.6;color:#edf0ff;max-width:640px}
+.hero-cta{display:flex;gap:12px;margin-top:26px;flex-wrap:wrap}
+.hero .primary-btn{background:white;color:#2f45bd;box-shadow:none}
+.hero .ghost-btn{background:rgba(255,255,255,.12);color:white;border-color:rgba(255,255,255,.28)}
+.hero-art{padding:30px 36px 30px 0}
+.device-card{
+  width:100%;aspect-ratio:1/1;max-width:340px;margin-left:auto;border-radius:28px;
+  background:linear-gradient(145deg,#ffffff,#e9eeff);position:relative;box-shadow:0 30px 55px rgba(22,28,70,.28);
+  overflow:hidden
+}
+.device-card:before{
+  content:"";position:absolute;width:190px;height:190px;border-radius:50%;background:linear-gradient(135deg,#ffca6a,#ff8d6c);
+  left:46px;top:48px;filter:drop-shadow(0 20px 20px rgba(245,138,90,.25))
+}
+.device-card:after{
+  content:"NC";position:absolute;right:30px;bottom:22px;color:#233465;font-size:64px;font-weight:900;letter-spacing:-5px;opacity:.92
+}
+.floating-chip{position:absolute;background:white;color:#27324e;border-radius:14px;padding:11px 13px;font-weight:800;box-shadow:var(--shadow);font-size:13px}
+.chip-1{left:18px;bottom:30px}.chip-2{right:18px;top:20px}
+.section{padding:24px 0 36px}
+.section-head{display:flex;align-items:end;justify-content:space-between;gap:20px;margin-bottom:18px}
+.section-head h2{margin:0;font-size:28px;letter-spacing:-.7px}
+.section-head p{margin:7px 0 0;color:var(--muted)}
+.link-btn{border:0;background:transparent;color:var(--brand);font-weight:800;padding:8px}
+.categories{display:grid;grid-template-columns:repeat(5,1fr);gap:14px}
+.category{
+  background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px;display:flex;align-items:center;gap:12px;
+  box-shadow:0 5px 18px rgba(20,30,55,.04);transition:.2s
+}
+.category:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
+.category-icon{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,#edf3ff,#eee8ff);display:grid;place-items:center;font-size:20px}
+.category strong{font-size:14px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+.product-card{
+  background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:14px;
+  box-shadow:0 5px 18px rgba(20,30,55,.04);transition:.2s;position:relative
+}
+.product-card:hover{transform:translateY(-3px);box-shadow:var(--shadow)}
+.product-visual{
+  height:210px;border-radius:14px;background:linear-gradient(145deg,#f0f4ff,#ece8ff);
+  display:grid;place-items:center;overflow:hidden;position:relative
+}
+.product-visual .emoji{font-size:74px;filter:drop-shadow(0 14px 14px rgba(20,30,55,.12))}
+.heart{position:absolute;right:12px;top:12px;width:34px;height:34px;border-radius:999px;border:0;background:rgba(255,255,255,.85);font-size:17px}
+.stock{font-size:12px;color:var(--accent);font-weight:850;margin-top:13px}
+.product-card h3{font-size:16px;margin:6px 0;line-height:1.35}
+.rating{font-size:13px;color:#f59e0b}
+.price-row{display:flex;align-items:center;justify-content:space-between;margin-top:12px}
+.price{font-size:20px;font-weight:900}
+.add-btn{width:40px;height:40px;border:0;border-radius:12px;background:#111827;color:white;font-size:21px}
+.trust{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:10px
+}
+.trust-card{background:white;border:1px solid var(--line);border-radius:18px;padding:20px;display:flex;gap:14px;align-items:flex-start}
+.trust-icon{width:42px;height:42px;flex:0 0 42px;border-radius:12px;background:#eef3ff;display:grid;place-items:center}
+.page{display:none}
+.page.active{display:block}
+.page-wrap{padding:34px 0 50px}
+.breadcrumb{font-size:14px;color:var(--muted);margin-bottom:18px}
+.panel{background:white;border:1px solid var(--line);border-radius:20px;box-shadow:0 8px 24px rgba(20,30,55,.05)}
+.products-layout{display:grid;grid-template-columns:240px 1fr;gap:22px}
+.filter-panel{padding:20px;height:max-content;position:sticky;top:98px}
+.filter-group{padding:16px 0;border-bottom:1px solid var(--line)}
+.filter-group:last-child{border-bottom:0}
+.filter-group h4{margin:0 0 12px}
+.filter-group label{display:flex;gap:8px;align-items:center;margin:10px 0;color:#4b5563;font-size:14px}
+.toolbar{display:flex;justify-content:space-between;align-items:center;gap:14px;margin-bottom:16px}
+.toolbar select{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:white}
+.detail-layout{display:grid;grid-template-columns:1fr 1fr;gap:34px}
+.detail-image{min-height:500px;display:grid;place-items:center;background:linear-gradient(145deg,#f0f4ff,#ece8ff);border-radius:22px;font-size:160px}
+.detail-info{padding:10px 4px}
+.detail-info h1{font-size:40px;line-height:1.1;letter-spacing:-1.2px;margin:10px 0}
+.detail-price{font-size:34px;font-weight:900;margin:12px 0}
+.detail-info p{color:var(--muted);line-height:1.7}
+.qty{display:flex;align-items:center;gap:12px;margin:22px 0}
+.qty button{width:40px;height:40px;border-radius:10px;border:1px solid var(--line);background:white}
+.qty span{min-width:30px;text-align:center;font-weight:800}
+.auth-shell{min-height:640px;display:grid;place-items:center;padding:40px 0}
+.auth-card{width:min(940px,100%);display:grid;grid-template-columns:1fr 1fr;overflow:hidden}
+.auth-side{
+  padding:46px;background:linear-gradient(145deg,#1f48ff,#7247e7);color:white;min-height:540px;display:flex;flex-direction:column;justify-content:space-between
+}
+.auth-side h2{font-size:38px;margin:18px 0 10px;letter-spacing:-1px}
+.auth-side p{color:#e7eaff;line-height:1.6}
+.auth-form{padding:46px}
+.auth-form h2{margin:0 0 8px}
+.auth-form p{margin:0 0 24px;color:var(--muted)}
+.field{margin-bottom:16px}
+.field label{display:block;font-size:13px;font-weight:800;margin-bottom:7px}
+.field input{width:100%;height:46px;border:1px solid var(--line);border-radius:12px;padding:0 13px;outline:0}
+.field input:focus{border-color:#9aabff;box-shadow:0 0 0 4px #eef1ff}
+.full{width:100%}
+.small{font-size:13px;color:var(--muted)}
+.cart-layout,.checkout-layout{display:grid;grid-template-columns:1fr 340px;gap:22px}
+.cart-list{padding:6px 20px}
+.cart-item{display:grid;grid-template-columns:90px 1fr auto;gap:16px;align-items:center;padding:20px 0;border-bottom:1px solid var(--line)}
+.cart-img{height:82px;border-radius:14px;background:linear-gradient(145deg,#f0f4ff,#ece8ff);display:grid;place-items:center;font-size:38px}
+.summary{padding:22px;height:max-content}
+.summary h3{margin-top:0}
+.summary-row{display:flex;justify-content:space-between;margin:13px 0;color:#4b5563}
+.summary-total{display:flex;justify-content:space-between;font-size:20px;font-weight:900;border-top:1px solid var(--line);padding-top:16px;margin-top:14px}
+.order-card{padding:20px;margin-bottom:14px;display:grid;grid-template-columns:1fr auto;gap:14px}
+.order-meta{color:var(--muted);font-size:14px;margin-top:7px}
+.status{display:inline-flex;padding:7px 10px;border-radius:999px;font-size:12px;font-weight:850}
+.status.ok{background:#e9fbf4;color:#087853}.status.warn{background:#fff6df;color:#9c6500}.status.bad{background:#fff0f0;color:#bd2f36}
+.payment-box{max-width:620px;margin:0 auto;padding:28px}
+.payment-options{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:20px}
+.payment-option{border:1px solid var(--line);border-radius:16px;padding:18px;background:white;text-align:left;transition:.2s}
+.payment-option:hover{border-color:#a9b6ff;box-shadow:0 7px 18px rgba(46,92,255,.10)}
+.center{text-align:center}
+.success-icon{width:90px;height:90px;border-radius:999px;background:#e9fbf4;color:#087853;display:grid;place-items:center;font-size:44px;margin:8px auto 18px}
+.footer{margin-top:48px;background:#111827;color:#cbd5e1;padding:44px 0 24px}
+.footer-grid{display:grid;grid-template-columns:2fr repeat(3,1fr);gap:30px}
+.footer h4{color:white;margin-top:0}
+.footer p,.footer a{color:#9ca3af;font-size:14px;line-height:1.8}
+.footer-bottom{border-top:1px solid #273244;margin-top:30px;padding-top:18px;font-size:13px;color:#8792a6;display:flex;justify-content:space-between}
+.toast{position:fixed;right:22px;bottom:22px;background:#111827;color:white;padding:14px 18px;border-radius:14px;box-shadow:var(--shadow);opacity:0;transform:translateY(14px);pointer-events:none;transition:.25s;z-index:99}
+.toast.show{opacity:1;transform:translateY(0)}
+.mobile-menu{display:none}
+@media(max-width:980px){
+  .categories{grid-template-columns:repeat(3,1fr)}
+  .grid{grid-template-columns:repeat(2,1fr)}
+  .hero{grid-template-columns:1fr}.hero-art{display:none}
+  .products-layout{grid-template-columns:1fr}.filter-panel{position:static}
+  .detail-layout,.auth-card,.cart-layout,.checkout-layout{grid-template-columns:1fr}
+  .auth-side{min-height:260px}
+}
+@media(max-width:680px){
+  .topbar{display:none}
+  .header-row{height:auto;padding:12px 0;flex-wrap:wrap}
+  .search{order:3;width:100%;flex-basis:100%}
+  .nav-actions .ghost-btn{display:none}
+  .hero-copy{padding:34px 24px}
+  .hero{min-height:330px}
+  .categories{grid-template-columns:repeat(2,1fr)}
+  .grid{grid-template-columns:1fr}
+  .section-head{align-items:flex-start}
+  .detail-image{min-height:330px;font-size:110px}
+  .auth-form,.auth-side{padding:28px}
+  .payment-options{grid-template-columns:1fr}
+  .cart-item{grid-template-columns:70px 1fr}.cart-item>div:last-child{grid-column:2}
+  .footer-grid{grid-template-columns:1fr 1fr}.footer-bottom{flex-direction:column;gap:8px}
+}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="container">
+    <span>Free delivery on orders over ₹999</span>
+    <span>Secure checkout • Easy returns • 24/7 support</span>
+  </div>
+</div>
+
+<header class="header">
+  <div class="container header-row">
+    <a class="logo" href="#home">
+      <span class="logo-mark">N</span>
+      NexCart
+    </a>
+
+    <div class="search">
+      <span>⌕</span>
+      <input id="globalSearch" placeholder="Search products, categories and brands">
+    </div>
+
+    <div class="nav-actions">
+      <button class="ghost-btn" onclick="go('orders')">Orders</button>
+      <button class="ghost-btn" onclick="go('login')">Sign in</button>
+      <button class="icon-btn" aria-label="Cart" onclick="go('cart')">🛒<span class="cart-count" id="cartCount">2</span></button>
+    </div>
+  </div>
+</header>
+
+<main>
+<section id="home" class="page active">
+  <div class="container">
+    <div class="hero">
+      <div class="hero-copy">
+        <span class="badge">✨ Fresh picks. Smarter shopping.</span>
+        <h1>Everything you want, one cart away.</h1>
+        <p>NexCart brings reliable shopping, fast checkout and a modern experience together in one simple marketplace.</p>
+        <div class="hero-cta">
+          <button class="primary-btn" onclick="go('products')">Shop products →</button>
+          <button class="ghost-btn" onclick="go('orders')">Track my orders</button>
+        </div>
+      </div>
+      <div class="hero-art">
+        <div class="device-card">
+          <div class="floating-chip chip-1">✓ Secure checkout</div>
+          <div class="floating-chip chip-2">⚡ Fast delivery</div>
+        </div>
+      </div>
+    </div>
+
+    <section class="section">
+      <div class="section-head">
+        <div><h2>Shop by category</h2><p>Find what you need faster.</p></div>
+      </div>
+      <div class="categories">
+        <div class="category"><div class="category-icon">💻</div><strong>Electronics</strong></div>
+        <div class="category"><div class="category-icon">👟</div><strong>Fashion</strong></div>
+        <div class="category"><div class="category-icon">🏠</div><strong>Home</strong></div>
+        <div class="category"><div class="category-icon">🎧</div><strong>Accessories</strong></div>
+        <div class="category"><div class="category-icon">📚</div><strong>Books</strong></div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <div><h2>Popular right now</h2><p>Curated products customers are loving.</p></div>
+        <button class="link-btn" onclick="go('products')">View all →</button>
+      </div>
+      <div class="grid" id="homeProducts"></div>
+    </section>
+
+    <section class="section">
+      <div class="trust">
+        <div class="trust-card"><div class="trust-icon">🔒</div><div><strong>Secure payments</strong><div class="small">Built around reliable payment flows and safe checkout.</div></div></div>
+        <div class="trust-card"><div class="trust-icon">⚡</div><div><strong>Fast experience</strong><div class="small">Optimized storefront with responsive product discovery.</div></div></div>
+        <div class="trust-card"><div class="trust-icon">📦</div><div><strong>Order visibility</strong><div class="small">Track confirmed, pending and failed orders in one place.</div></div></div>
+      </div>
+    </section>
+  </div>
+</section>
+
+<section id="products" class="page">
+  <div class="container page-wrap">
+    <div class="breadcrumb">Home / Products</div>
+    <div class="section-head">
+      <div><h2>Explore products</h2><p>Browse the complete NexCart catalog.</p></div>
+    </div>
+    <div class="products-layout">
+      <aside class="panel filter-panel">
+        <h3 style="margin-top:0">Filters</h3>
+        <div class="filter-group">
+          <h4>Category</h4>
+          <label><input type="checkbox"> Electronics</label>
+          <label><input type="checkbox"> Fashion</label>
+          <label><input type="checkbox"> Home</label>
+          <label><input type="checkbox"> Books</label>
+        </div>
+        <div class="filter-group">
+          <h4>Availability</h4>
+          <label><input type="checkbox"> In stock</label>
+        </div>
+        <div class="filter-group">
+          <h4>Price</h4>
+          <label><input type="radio" name="price"> Under ₹1,000</label>
+          <label><input type="radio" name="price"> ₹1,000–₹10,000</label>
+          <label><input type="radio" name="price"> ₹10,000+</label>
+        </div>
+      </aside>
+      <div>
+        <div class="toolbar">
+          <div class="small">Showing <strong>8 products</strong></div>
+          <select><option>Recommended</option><option>Price: Low to High</option><option>Price: High to Low</option></select>
+        </div>
+        <div class="grid" id="allProducts"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="product-detail" class="page">
+  <div class="container page-wrap">
+    <div class="breadcrumb"><a href="#products">Products</a> / <span id="detailCrumb">Product</span></div>
+    <div class="detail-layout">
+      <div class="detail-image" id="detailEmoji">💻</div>
+      <div class="detail-info">
+        <div class="stock">● In stock</div>
+        <h1 id="detailTitle">NexBook Air</h1>
+        <div class="rating">★★★★★ <span class="small">(124 reviews)</span></div>
+        <div class="detail-price" id="detailPrice">₹74,999</div>
+        <p id="detailDescription">A lightweight, fast and premium laptop built for work, learning and everyday productivity.</p>
+        <div class="panel" style="padding:18px;margin:24px 0">
+          <strong>Why buy from NexCart?</strong>
+          <div class="small" style="margin-top:8px;line-height:1.7">✓ Secure checkout &nbsp; ✓ Easy returns &nbsp; ✓ Fast delivery</div>
+        </div>
+        <div class="qty"><strong>Quantity</strong><button onclick="changeQty(-1)">−</button><span id="qtyValue">1</span><button onclick="changeQty(1)">+</button></div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap">
+          <button class="primary-btn" onclick="addCurrentToCart()">Add to cart</button>
+          <button class="secondary-btn" onclick="go('cart')">Buy now</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="login" class="page">
+  <div class="container auth-shell">
+    <div class="panel auth-card">
+      <div class="auth-side">
+        <div>
+          <div class="logo"><span class="logo-mark">N</span> NexCart</div>
+          <h2>Welcome back.</h2>
+          <p>Sign in to access your cart, checkout securely and track every order from one place.</p>
+        </div>
+        <div class="small" style="color:#d8ddff">Built for a production-style full-stack portfolio project.</div>
+      </div>
+      <form class="auth-form" onsubmit="fakeLogin(event)">
+        <h2>Sign in</h2>
+        <p>Use any demo email and password.</p>
+        <div class="field"><label>Email</label><input type="email" value="demo@nexcart.dev" required></div>
+        <div class="field"><label>Password</label><input type="password" value="password123" required></div>
+        <button class="primary-btn full">Sign in</button>
+        <div class="small center" style="margin-top:18px">New to NexCart? <a href="#register" style="color:var(--brand);font-weight:800">Create account</a></div>
+      </form>
+    </div>
+  </div>
+</section>
+
+<section id="register" class="page">
+  <div class="container auth-shell">
+    <div class="panel auth-card">
+      <div class="auth-side">
+        <div>
+          <div class="logo"><span class="logo-mark">N</span> NexCart</div>
+          <h2>Create your account.</h2>
+          <p>Join NexCart and experience a clean, dependable shopping journey from discovery to delivery.</p>
+        </div>
+        <div class="small" style="color:#d8ddff">Account creation will later connect to your Spring Boot auth API.</div>
+      </div>
+      <form class="auth-form" onsubmit="fakeRegister(event)">
+        <h2>Register</h2>
+        <p>Get started in less than a minute.</p>
+        <div class="field"><label>First name</label><input required placeholder="Alex"></div>
+        <div class="field"><label>Last name</label><input required placeholder="Morgan"></div>
+        <div class="field"><label>Email</label><input type="email" required placeholder="alex@example.com"></div>
+        <div class="field"><label>Password</label><input type="password" required placeholder="Minimum 8 characters"></div>
+        <button class="primary-btn full">Create account</button>
+      </form>
+    </div>
+  </div>
+</section>
+
+<section id="cart" class="page">
+  <div class="container page-wrap">
+    <div class="breadcrumb">Home / Cart</div>
+    <div class="section-head"><div><h2>Your cart</h2><p>Review items before checkout.</p></div></div>
+    <div class="cart-layout">
+      <div class="panel cart-list" id="cartItems"></div>
+      <aside class="panel summary">
+        <h3>Order summary</h3>
+        <div class="summary-row"><span>Subtotal</span><strong id="subtotal">₹0</strong></div>
+        <div class="summary-row"><span>Delivery</span><strong>FREE</strong></div>
+        <div class="summary-row"><span>Taxes</span><span>Calculated at checkout</span></div>
+        <div class="summary-total"><span>Total</span><span id="cartTotal">₹0</span></div>
+        <button class="primary-btn full" style="margin-top:20px" onclick="go('checkout')">Proceed to checkout</button>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<section id="checkout" class="page">
+  <div class="container page-wrap">
+    <div class="breadcrumb">Cart / Checkout</div>
+    <div class="section-head"><div><h2>Checkout</h2><p>Final totals are validated by the backend before payment.</p></div></div>
+    <div class="checkout-layout">
+      <div class="panel" style="padding:24px">
+        <h3 style="margin-top:0">Delivery information</h3>
+        <div class="field"><label>Full name</label><input value="Demo Customer"></div>
+        <div class="field"><label>Phone</label><input value="+91 98765 43210"></div>
+        <div class="field"><label>Address</label><input value="12 Market Street, Bengaluru"></div>
+        <div class="field"><label>PIN code</label><input value="560001"></div>
+        <div class="small">For the first backend version, you can keep address management out of scope and treat this as checkout-only data.</div>
+      </div>
+      <aside class="panel summary">
+        <h3>Final summary</h3>
+        <div class="summary-row"><span>Items</span><strong id="checkoutItemsCount">2</strong></div>
+        <div class="summary-row"><span>Delivery</span><strong>FREE</strong></div>
+        <div class="summary-total"><span>Total</span><span id="checkoutTotal">₹0</span></div>
+        <button class="primary-btn full" style="margin-top:20px" onclick="go('payment')">Place order & pay</button>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<section id="payment" class="page">
+  <div class="container page-wrap">
+    <div class="breadcrumb">Checkout / Payment</div>
+    <div class="panel payment-box">
+      <div class="center">
+        <span class="badge" style="background:#eef3ff;color:#3152d6;border-color:#dce3ff">Development payment simulator</span>
+        <h2>Simulate payment result</h2>
+        <p class="small">Use these states later to test idempotency, retries, timeouts and inventory release.</p>
+        <div class="detail-price" id="paymentTotal">₹0</div>
+      </div>
+      <div class="payment-options">
+        <button class="payment-option" onclick="paymentResult('success')"><strong>✓ Success</strong><div class="small">Confirm payment and order.</div></button>
+        <button class="payment-option" onclick="paymentResult('failed')"><strong>✕ Failure</strong><div class="small">Release inventory reservation.</div></button>
+        <button class="payment-option" onclick="paymentResult('timeout')"><strong>⌛ Timeout</strong><div class="small">Keep status pending and retry/check.</div></button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="order-success" class="page">
+  <div class="container page-wrap">
+    <div class="panel payment-box center">
+      <div class="success-icon">✓</div>
+      <h2>Order confirmed!</h2>
+      <p class="small">Your order <strong>#NX10294</strong> has been created successfully.</p>
+      <div class="detail-price" id="successTotal">₹0</div>
+      <div style="display:flex;justify-content:center;gap:12px;margin-top:22px;flex-wrap:wrap">
+        <button class="primary-btn" onclick="go('orders')">View my orders</button>
+        <button class="secondary-btn" onclick="go('products')">Continue shopping</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="orders" class="page">
+  <div class="container page-wrap">
+    <div class="breadcrumb">Home / My Orders</div>
+    <div class="section-head"><div><h2>My orders</h2><p>Track current and previous purchases.</p></div></div>
+    <div class="panel order-card">
+      <div><strong>Order #NX10294</strong><div class="order-meta">30 Aug 2026 • 2 items • ₹77,498</div></div>
+      <div style="text-align:right"><span class="status ok">CONFIRMED</span><div><button class="link-btn">View details →</button></div></div>
+    </div>
+    <div class="panel order-card">
+      <div><strong>Order #NX10281</strong><div class="order-meta">25 Aug 2026 • 1 item • ₹2,499</div></div>
+      <div style="text-align:right"><span class="status warn">PENDING PAYMENT</span><div><button class="link-btn">View details →</button></div></div>
+    </div>
+    <div class="panel order-card">
+      <div><strong>Order #NX10273</strong><div class="order-meta">18 Aug 2026 • 3 items • ₹5,297</div></div>
+      <div style="text-align:right"><span class="status bad">PAYMENT FAILED</span><div><button class="link-btn">View details →</button></div></div>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer class="footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <div class="logo" style="color:white"><span class="logo-mark">N</span> NexCart</div>
+        <p>A production-inspired e-commerce portfolio project built to demonstrate full-stack engineering, reliable backend flows and modern frontend UX.</p>
+      </div>
+      <div><h4>Shop</h4><p><a href="#products">Products</a><br><a href="#cart">Cart</a><br><a href="#orders">Orders</a></p></div>
+      <div><h4>Account</h4><p><a href="#login">Sign in</a><br><a href="#register">Register</a></p></div>
+      <div><h4>Project</h4><p>Angular-ready UI<br>Spring Boot APIs<br>PostgreSQL • Redis • Kafka</p></div>
+    </div>
+    <div class="footer-bottom"><span>© 2026 NexCart</span><span>Prototype UI • Portfolio-ready</span></div>
+  </div>
+</footer>
+<div class="toast" id="toast"></div>
+
+<script>
+const products = [
+  {id:1,title:'NexBook Air',price:74999,emoji:'💻',desc:'A lightweight, fast and premium laptop built for work, learning and everyday productivity.'},
+  {id:2,title:'Pulse Wireless Headphones',price:2499,emoji:'🎧',desc:'Immersive wireless sound with all-day comfort and long battery life.'},
+  {id:3,title:'Urban Runner',price:3299,emoji:'👟',desc:'Breathable everyday sneakers designed for comfort, movement and style.'},
+  {id:4,title:'Smart Watch S2',price:5999,emoji:'⌚',desc:'Track workouts, notifications and everyday activity from your wrist.'},
+  {id:5,title:'Minimal Desk Lamp',price:1499,emoji:'💡',desc:'A modern adjustable lamp for workspaces, reading and late-night focus.'},
+  {id:6,title:'Everyday Backpack',price:1899,emoji:'🎒',desc:'A durable backpack with clean organization for work, college and travel.'},
+  {id:7,title:'Mechanical Keyboard',price:4499,emoji:'⌨️',desc:'Responsive mechanical keys with a compact productivity-focused layout.'},
+  {id:8,title:'Clean Code Essentials',price:799,emoji:'📘',desc:'A practical software engineering book for developers improving code quality.'}
+];
+let cart = [
+  {...products[0],qty:1},
+  {...products[1],qty:1}
+];
+let currentProduct = products[0];
+let qty = 1;
+
+const format = n => '₹' + n.toLocaleString('en-IN');
+
+function productCard(p){
+  return `<article class="product-card">
+    <div class="product-visual" onclick="openProduct(${p.id})" style="cursor:pointer">
+      <button class="heart" onclick="event.stopPropagation();toast('Saved to wishlist')">♡</button>
+      <span class="emoji">${p.emoji}</span>
+    </div>
+    <div class="stock">● In stock</div>
+    <h3>${p.title}</h3>
+    <div class="rating">★★★★★ <span class="small">(4.${(p.id%4)+5})</span></div>
+    <div class="price-row">
+      <div class="price">${format(p.price)}</div>
+      <button class="add-btn" onclick="addToCart(${p.id})">+</button>
+    </div>
+  </article>`;
+}
+function renderProducts(){
+  document.getElementById('homeProducts').innerHTML = products.slice(0,4).map(productCard).join('');
+  document.getElementById('allProducts').innerHTML = products.map(productCard).join('');
+}
+function openProduct(id){
+  currentProduct = products.find(p=>p.id===id) || products[0];
+  qty=1; document.getElementById('qtyValue').textContent=qty;
+  document.getElementById('detailEmoji').textContent=currentProduct.emoji;
+  document.getElementById('detailTitle').textContent=currentProduct.title;
+  document.getElementById('detailCrumb').textContent=currentProduct.title;
+  document.getElementById('detailPrice').textContent=format(currentProduct.price);
+  document.getElementById('detailDescription').textContent=currentProduct.desc;
+  go('product-detail');
+}
+function changeQty(delta){qty=Math.max(1,Math.min(9,qty+delta));document.getElementById('qtyValue').textContent=qty}
+function addCurrentToCart(){for(let i=0;i<qty;i++) addToCart(currentProduct.id,false); toast(`${currentProduct.title} added to cart`)}
+function addToCart(id,show=true){
+  const p=products.find(x=>x.id===id); const existing=cart.find(x=>x.id===id);
+  if(existing) existing.qty++; else cart.push({...p,qty:1});
+  updateCart(); if(show) toast(`${p.title} added to cart`);
+}
+function updateCart(){
+  const count=cart.reduce((a,b)=>a+b.qty,0);
+  document.getElementById('cartCount').textContent=count;
+  const list=document.getElementById('cartItems');
+  if(!cart.length){list.innerHTML='<div style="padding:36px;text-align:center"><h3>Your cart is empty</h3><p class="small">Add something you like and it will appear here.</p></div>'}
+  else{
+    list.innerHTML=cart.map(i=>`<div class="cart-item">
+      <div class="cart-img">${i.emoji}</div>
+      <div><strong>${i.title}</strong><div class="small" style="margin-top:5px">In stock • ${format(i.price)}</div>
+        <div class="qty" style="margin:10px 0 0"><button onclick="cartQty(${i.id},-1)">−</button><span>${i.qty}</span><button onclick="cartQty(${i.id},1)">+</button></div>
+      </div>
+      <div style="text-align:right"><strong>${format(i.price*i.qty)}</strong><div><button class="link-btn" style="color:var(--danger)" onclick="removeItem(${i.id})">Remove</button></div></div>
+    </div>`).join('');
+  }
+  const total=cart.reduce((s,i)=>s+i.price*i.qty,0);
+  ['subtotal','cartTotal','checkoutTotal','paymentTotal','successTotal'].forEach(id=>{const el=document.getElementById(id); if(el)el.textContent=format(total)});
+  document.getElementById('checkoutItemsCount').textContent=count;
+}
+function cartQty(id,d){const i=cart.find(x=>x.id===id); if(!i)return; i.qty+=d;if(i.qty<=0)cart=cart.filter(x=>x.id!==id);updateCart()}
+function removeItem(id){cart=cart.filter(x=>x.id!==id);updateCart();toast('Item removed')}
+function fakeLogin(e){e.preventDefault();toast('Signed in successfully');setTimeout(()=>go('home'),500)}
+function fakeRegister(e){e.preventDefault();toast('Account created');setTimeout(()=>go('home'),500)}
+function paymentResult(type){
+  if(type==='success'){toast('Payment successful'); setTimeout(()=>go('order-success'),450)}
+  if(type==='failed'){toast('Payment failed — inventory reservation would be released')}
+  if(type==='timeout'){toast('Payment timed out — status stays pending for reconciliation')}
+}
+function go(id){location.hash=id}
+function activate(){
+  const id=(location.hash||'#home').slice(1);
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  const el=document.getElementById(id)||document.getElementById('home');
+  el.classList.add('active');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+let toastTimer;
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2200)}
+document.getElementById('globalSearch').addEventListener('keydown',e=>{if(e.key==='Enter'){go('products');toast('Search prototype opened')}})
+window.addEventListener('hashchange',activate);
+renderProducts();updateCart();activate();
+</script>
+</body>
+</html>
