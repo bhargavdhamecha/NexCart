@@ -2,10 +2,6 @@
 
 A small-scale, Amazon-style e-commerce application — built as a **production-honest deep dive into Java backend engineering**: concurrency control, idempotency, distributed-systems patterns, caching, rate limiting, and containerized deployment, wrapped in a real full-stack app rather than a toy CRUD demo.
 
-> **Why this exists**: NexCart is primarily an interview-preparation project for Java Backend / SDE-2 roles. The guiding principle throughout (see [`context.md`](context.md)) has been **40% build, 30% intentionally break, 30% debug** — every concurrency bug in this codebase was reproduced against a real Postgres, diagnosed from a real stack trace, and fixed for a real reason, not written correctly the first time. That history is deliberately visible in the code comments rather than cleaned away.
-
----
-
 ## Table of contents
 
 - [Overview](#overview)
